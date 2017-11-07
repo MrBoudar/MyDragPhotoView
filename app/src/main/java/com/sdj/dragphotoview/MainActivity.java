@@ -20,7 +20,6 @@ public class MainActivity extends AppCompatActivity {
         imageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ViewHelper.setTranslationY(imageView, 100);
                 Intent intent = new Intent(MainActivity.this, ShowImageViewActivity.class);
                 int[] imgLocation = new int[2];
                 imageView.getLocationOnScreen(imgLocation);
