@@ -213,8 +213,6 @@ public class SubsamplingScaleImageView2 extends View {
     // Min scale allowed (prevent infinite zoom)
     private float minScale = minScale();
 
-    private float currentScale = 0;
-
     // Density to reach before loading higher resolution tiles
     private int minimumTileDpi = -1;
 
@@ -329,6 +327,7 @@ public class SubsamplingScaleImageView2 extends View {
     //The logical density of the display
     private float density;
 
+    /******************手势拖动相关***********************/
     private float mDownX;
     private float mDownY;
     private float mTranslationX;
@@ -339,9 +338,7 @@ public class SubsamplingScaleImageView2 extends View {
     private final static int MAX_EXIT_Y = 300;
     private final static int CAN_MOVE_X = 150;
     private final static long DURATION = 300;
-    private boolean canFinish = false;
     private boolean isAnimate = false;
-    private boolean isOneFingerDrag = false;
 
     //    private final static Executor exec = Executors.newFixedThreadPool(3);
     private static Executor exec = CommonExecutor.getExecutor(3, 5, 12);
@@ -593,7 +590,7 @@ public class SubsamplingScaleImageView2 extends View {
 
             @Override
             public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-                if (panEnabled && readySent && vTranslate != null && e1 != null && e2 != null && (Math.abs(e1.getX() - e2.getX()) > 50 || Math.abs(e1.getY() - e2.getY()) > 50) && (Math.abs(velocityX) > 500 || Math.abs(velocityY) > 500) && !isZooming && currentScale > minScale()) {
+                if (panEnabled && readySent && vTranslate != null && e1 != null && e2 != null && (Math.abs(e1.getX() - e2.getX()) > 50 || Math.abs(e1.getY() - e2.getY()) > 50) && (Math.abs(velocityX) > 500 || Math.abs(velocityY) > 500) && !isZooming && scale > minScale()) {
                     PointF vTranslateEnd = new PointF(vTranslate.x + (velocityX * 0.25f), vTranslate.y + (velocityY * 0.25f));
                     float sCenterXEnd = ((getWidth() / 2) - vTranslateEnd.x) / scale;
                     float sCenterYEnd = ((getHeight() / 2) - vTranslateEnd.y) / scale;
@@ -775,7 +772,7 @@ public class SubsamplingScaleImageView2 extends View {
             case MotionEvent.ACTION_MOVE:
                 boolean consumed = false;
                 if (maxTouchCount > 0) {
-                    if (touchCount >= 2 && !isOneFingerDrag) {
+                    if (touchCount >= 2) {
                         // Calculate new distance between touch points, to scale and pan relative to start values.
                         float vDistEnd = distance(event.getX(0), event.getX(1), event.getY(0), event.getY(1));
                         float vCenterEndX = (event.getX(0) + event.getX(1)) / 2;
@@ -787,7 +784,6 @@ public class SubsamplingScaleImageView2 extends View {
 
                             double previousScale = scale;
                             scale = Math.min(maxScale, (vDistEnd / vDistStart) * scaleStart);
-                            currentScale = scale;
                             Log.e(TAG, "zoom scale = " + scale);
                             if (scale <= minScale()) {
                                 // Minimum scale reached so don't pan. Adjust start settings so any expand will zoom in.
@@ -891,13 +887,12 @@ public class SubsamplingScaleImageView2 extends View {
                             consumed = true;
                             vTranslate.x = vTranslateStart.x + (event.getX() - vCenterStart.x);
                             vTranslate.y = vTranslateStart.y + (event.getY() - vCenterStart.y);
-
                             float lastX = vTranslate.x;
                             float lastY = vTranslate.y;
-                            if (currentScale <= minScale() && maxTouchCount == 1) {
+                            fitToBounds(true);
+                            if (scale <= minScale() && maxTouchCount == 1) {
                                 onSingleActionMove(event);
                             }
-                            fitToBounds(true);
                             boolean atXEdge = lastX != vTranslate.x;
                             boolean atYEdge = lastY != vTranslate.y;
                             boolean edgeXSwipe = atXEdge && dx > dy && !isPanning;
@@ -905,18 +900,17 @@ public class SubsamplingScaleImageView2 extends View {
                             boolean yPan = lastY == vTranslate.y && dy > offset * 3;
                             if (!edgeXSwipe && !edgeYSwipe && (!atXEdge || !atYEdge || yPan || isPanning)) {
                                 isPanning = true;
-                            } else if (dx > offset || dy > offset) {
+                            } else if (dx > offset) {
                                 // Haven't panned the image, and we're at the left or right edge. Switch to page swipe.
                                 maxTouchCount = 0;
                                 handler.removeMessages(MESSAGE_LONG_CLICK);
                                 requestDisallowInterceptTouchEvent(false);
                             }
-                            if (!panEnabled) {
+                            if (!panEnabled && scale > minScale()) {
                                 vTranslate.x = vTranslateStart.x;
                                 vTranslate.y = vTranslateStart.y;
                                 requestDisallowInterceptTouchEvent(false);
                             }
-
                             refreshRequiredTiles(false);
                         }
                     }
@@ -931,14 +925,14 @@ public class SubsamplingScaleImageView2 extends View {
             case MotionEvent.ACTION_POINTER_UP:
             case MotionEvent.ACTION_POINTER_2_UP:
                 handler.removeMessages(MESSAGE_LONG_CLICK);
-                if (isQuickScaling && currentScale > minScale()) {
+                if (isQuickScaling) {
                     isQuickScaling = false;
                     if (!quickScaleMoved) {
                         doubleTapZoom(quickScaleSCenter, vCenterStart);
                     }
                 }
-                if (maxTouchCount > 1 && (isZooming || isPanning)) {
-                    if (isZooming && touchCount == 2 && currentScale > minScale()) {
+                if (maxTouchCount > 0 && (isZooming || isPanning) && scale > minScale()) {
+                    if (isZooming && touchCount == 2) {
                         // Convert from zoom to pan with remaining touch
                         isPanning = true;
                         vTranslateStart.set(vTranslate.x, vTranslate.y);
@@ -951,10 +945,12 @@ public class SubsamplingScaleImageView2 extends View {
                     if (touchCount < 3) {
                         // End zooming when only one touch point
                         isZooming = false;
+                        maxTouchCount = 0;
                     }
                     if (touchCount < 2) {
                         // End panning when no touch points
                         isPanning = false;
+                        maxTouchCount = 0;
                     }
                     // Trigger load of tiles now required
                     refreshRequiredTiles(true);
@@ -962,12 +958,9 @@ public class SubsamplingScaleImageView2 extends View {
                 }
                 if (touchCount == 1) {
                     isZooming = false;
-                    isPanning = false;
+                    isPanning = true;
                 }
-                if (touchCount == 2) {
-                    maxTouchCount = 0;
-                }
-                if (currentScale <= minScale() && maxTouchCount == 1) {
+                if (scale <= minScale() && maxTouchCount == 1) {
                     onActionUp(event);
                 }
                 return true;
@@ -978,6 +971,7 @@ public class SubsamplingScaleImageView2 extends View {
     /**
      * 入场动画
      */
+
     public void performEnterAnimation(float scaleX, float scaleY) {
         ValueAnimator translateXAnimator = ValueAnimator.ofFloat(getX(), 0);
         translateXAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
@@ -1021,7 +1015,6 @@ public class SubsamplingScaleImageView2 extends View {
     }
 
     private void onSingleActionMove(MotionEvent event) {
-        isOneFingerDrag = true;
         float moveX = event.getRawX();
         float moveY = event.getRawY();
         mTranslationX = moveX - mDownX + mLastTranslationX;
@@ -1043,6 +1036,7 @@ public class SubsamplingScaleImageView2 extends View {
     }
 
     private void onActionUp(MotionEvent event) {
+        Log.e(TAG, "translationY= " + mTranslationY);
         if (Math.abs(mTranslationY) > MAX_EXIT_Y) {
             exitWithTranslation(mTranslationY);
         } else {
@@ -1095,8 +1089,8 @@ public class SubsamplingScaleImageView2 extends View {
         });
         animatorY.start();
     }
-    private void reset(){
-        isOneFingerDrag = false;
+
+    private void reset() {
     }
 
     private void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
@@ -3322,8 +3316,9 @@ public class SubsamplingScaleImageView2 extends View {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     reset();
-                    ((Activity) getContext()).finish();
-                    ((Activity) getContext()).overridePendingTransition(0, 0);
+                    Activity activity = ((Activity) getContext());
+                    activity.finish();
+                    activity.overridePendingTransition(0, 0);
                 }
 
                 @Override
