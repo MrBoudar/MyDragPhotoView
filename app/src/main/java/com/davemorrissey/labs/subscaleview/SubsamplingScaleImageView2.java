@@ -900,7 +900,7 @@ public class SubsamplingScaleImageView2 extends View {
                             boolean yPan = lastY == vTranslate.y && dy > offset * 3;
                             if (!edgeXSwipe && !edgeYSwipe && (!atXEdge || !atYEdge || yPan || isPanning)) {
                                 isPanning = true;
-                            } else if (dx > offset) {
+                            } else if (dx > offset || dy > offset) {
                                 // Haven't panned the image, and we're at the left or right edge. Switch to page swipe.
                                 maxTouchCount = 0;
                                 handler.removeMessages(MESSAGE_LONG_CLICK);
@@ -958,7 +958,7 @@ public class SubsamplingScaleImageView2 extends View {
                 }
                 if (touchCount == 1) {
                     isZooming = false;
-                    isPanning = true;
+                    isPanning = false;
                 }
                 if (scale <= minScale() && maxTouchCount == 1) {
                     onActionUp(event);
