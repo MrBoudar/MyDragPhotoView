@@ -3,6 +3,7 @@ package com.sdj.dragphotoview;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.view.View;
 
 import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView2;
@@ -21,6 +22,13 @@ public class ShowImageViewActivity extends AppCompatActivity {
         subsamplingScaleImageView2 = findViewById(R.id.icon);
         ImageSource imageSource = ImageSource.resource(R.mipmap.ss);
         subsamplingScaleImageView2.setImage(imageSource);
+        subsamplingScaleImageView2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+                overridePendingTransition(R.anim.fade_in,R.anim.fade_out);
+            }
+        });
 
     }
 

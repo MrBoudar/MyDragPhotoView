@@ -339,6 +339,9 @@ public class SubsamplingScaleImageView2 extends View {
     private final static int CAN_MOVE_X = 150;
     private final static long DURATION = 300;
     private boolean isAnimate = false;
+    private boolean isOneFingerDrag;
+    int fadeIn = com.sdj.dragphotoview.R.anim.fade_in;
+    int fadeOut = com.sdj.dragphotoview.R.anim.fade_out;
 
     //    private final static Executor exec = Executors.newFixedThreadPool(3);
     private static Executor exec = CommonExecutor.getExecutor(3, 5, 12);
@@ -772,7 +775,7 @@ public class SubsamplingScaleImageView2 extends View {
             case MotionEvent.ACTION_MOVE:
                 boolean consumed = false;
                 if (maxTouchCount > 0) {
-                    if (touchCount >= 2) {
+                    if (touchCount >= 2 && !isOneFingerDrag) {
                         // Calculate new distance between touch points, to scale and pan relative to start values.
                         float vDistEnd = distance(event.getX(0), event.getX(1), event.getY(0), event.getY(1));
                         float vCenterEndX = (event.getX(0) + event.getX(1)) / 2;
@@ -959,6 +962,7 @@ public class SubsamplingScaleImageView2 extends View {
                 if (touchCount == 1) {
                     isZooming = false;
                     isPanning = false;
+                    reset();
                 }
                 if (scale <= minScale() && maxTouchCount == 1) {
                     onActionUp(event);
@@ -1019,6 +1023,7 @@ public class SubsamplingScaleImageView2 extends View {
         float moveY = event.getRawY();
         mTranslationX = moveX - mDownX + mLastTranslationX;
         mTranslationY = moveY - mDownY + mLastTranslationY;
+        isOneFingerDrag = mTranslationY != 0;
         float percent = Math.abs(mTranslationY / (MAX_TRANSLATE_Y + sHeight));
         Log.e(TAG, "percent= " + percent + "translationY= " + mTranslationY + "Max_Y = " + MAX_TRANSLATE_Y);
         LinearLayout linearLayout = (LinearLayout) getParent();
@@ -1091,6 +1096,7 @@ public class SubsamplingScaleImageView2 extends View {
     }
 
     private void reset() {
+        isOneFingerDrag = false;
     }
 
     private void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
@@ -3318,7 +3324,7 @@ public class SubsamplingScaleImageView2 extends View {
                     reset();
                     Activity activity = ((Activity) getContext());
                     activity.finish();
-                    activity.overridePendingTransition(0, 0);
+                    activity.overridePendingTransition(fadeIn, fadeOut);
                 }
 
                 @Override
@@ -3354,7 +3360,7 @@ public class SubsamplingScaleImageView2 extends View {
                 public void onAnimationEnd(Animator animation) {
                     reset();
                     ((Activity) getContext()).finish();
-                    ((Activity) getContext()).overridePendingTransition(0, 0);
+                    ((Activity) getContext()).overridePendingTransition(fadeIn, fadeOut);
                 }
 
                 @Override
