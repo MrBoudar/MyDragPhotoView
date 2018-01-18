@@ -24,8 +24,10 @@ repositories {
 }
 dependencies {
     compile fileTree(include: '*.jar', dir: 'libs')
+    //noinspection GradleCompatible
     compile 'com.android.support:appcompat-v7:26.1.0'
     compile(name: 'subsampling-scale-image-view-3.6.0', ext: 'aar')
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     compile 'com.nineoldandroids:library:2.4.0'
+    compile 'com.jaeger.statusbarutil:library:1.4.0'
 }

@@ -7,11 +7,10 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
-        >
-        <activity android:name=".MainActivity"
-            android:theme="@style/ThemeTranslucent"
-            >
+        android:supportsRtl="true">
+        <activity
+            android:name=".MainActivity"
+            android:theme="@style/AppTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -19,8 +18,16 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ShowImageViewActivity"
+            android:name=".ByteDanceActivity"
             android:theme="@style/ThemeTranslucent" />
+
+        <activity android:name=".WechatFriendCircleActivity"
+            android:theme="@style/ThemeTranslucent"
+            />
+
+        <activity android:name=".ImageViewActivity"
+            android:theme="@style/ThemeTranslucent"
+            />
     </application>
 
 </manifest>

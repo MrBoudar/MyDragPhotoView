@@ -16,9 +16,6 @@ limitations under the License.
 
 package com.davemorrissey.labs.subscaleview;
 
-import android.animation.Animator;
-import android.animation.ValueAnimator;
-import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -51,10 +48,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewParent;
-import android.view.animation.LinearInterpolator;
-import android.widget.LinearLayout;
-import android.widget.Scroller;
-
 import com.davemorrissey.labs.subscaleview.R.styleable;
 import com.davemorrissey.labs.subscaleview.decoder.CompatDecoderFactory;
 import com.davemorrissey.labs.subscaleview.decoder.DecoderFactory;
@@ -62,7 +55,6 @@ import com.davemorrissey.labs.subscaleview.decoder.ImageDecoder;
 import com.davemorrissey.labs.subscaleview.decoder.ImageRegionDecoder;
 import com.davemorrissey.labs.subscaleview.decoder.SkiaImageDecoder;
 import com.davemorrissey.labs.subscaleview.decoder.SkiaImageRegionDecoder;
-import com.nineoldandroids.view.ViewHelper;
 import com.sdj.dragphotoview.CommonExecutor;
 
 import java.lang.ref.WeakReference;
@@ -85,14 +77,9 @@ import java.util.concurrent.Executor;
  * s prefixes - coordinates, translations and distances measured in source image pixels (scaled)
  */
 @SuppressWarnings("unused")
-/***
- * 1.该类中自带上下平移类似今日头条的效果,可以在布局中直接使用,但其效果体验没有FingerGroup搭配子View效果好
- * 2.建议使用FingerGroup类搭配子View来使用
- */
-@Deprecated
-public class SubsamplingScaleImageView2 extends View {
+public class SubsamplingScaleImageView3 extends View {
 
-    private static final String TAG = SubsamplingScaleImageView2.class.getSimpleName();
+    private static final String TAG = SubsamplingScaleImageView3.class.getSimpleName();
 
     /**
      * Attempt to use EXIF information on the image to rotate it. Works for external files only.
@@ -336,41 +323,23 @@ public class SubsamplingScaleImageView2 extends View {
     //    private final static Executor exec = Executors.newFixedThreadPool(3);
     private static Executor exec = CommonExecutor.getExecutor(3, 5, 12);
 
-    /******************单个手指平移相关***********************/
-    private float mDownX;
-    private float mDownY;
-    private float mTranslationX;
-    private float mTranslationY;
-    private float mLastTranslationY;
-    private float mLastTranslationX;
-    private static int MAX_TRANSLATE_Y = 500;
-    private final static int MAX_EXIT_Y = 300;
-    private final static int CAN_MOVE_X = 50;
-    private final static long DURATION = 300;
-    private boolean isAnimate = false;
-    private boolean isOneFingerDrag;
-    private int fadeIn = com.sdj.dragphotoview.R.anim.fade_in;
-    private int fadeOut = com.sdj.dragphotoview.R.anim.fade_out;
-    private onAlphaChangedListener mOnAlphaChangedListener;
     public boolean atYEdge;
     private int mTouchslop;
-    private Scroller mScroller;
 
-    public SubsamplingScaleImageView2(Context context, AttributeSet attr) {
+    public SubsamplingScaleImageView3(Context context, AttributeSet attr) {
         super(context, attr);
         density = getResources().getDisplayMetrics().density;
         setMinimumDpi(160);
         setDoubleTapZoomDpi(160);
         setGestureDetector(context);
-        mScroller = new Scroller(context);
         mTouchslop = ViewConfiguration.get(context).getScaledPagingTouchSlop();
         this.handler = new Handler(new Handler.Callback() {
             public boolean handleMessage(Message message) {
                 if (message.what == MESSAGE_LONG_CLICK && onLongClickListener != null) {
                     maxTouchCount = 0;
-                    SubsamplingScaleImageView2.super.setOnLongClickListener(onLongClickListener);
+                    SubsamplingScaleImageView3.super.setOnLongClickListener(onLongClickListener);
                     performLongClick();
-                    SubsamplingScaleImageView2.super.setOnLongClickListener(null);
+                    SubsamplingScaleImageView3.super.setOnLongClickListener(null);
                 }
                 return true;
             }
@@ -408,7 +377,7 @@ public class SubsamplingScaleImageView2 extends View {
         quickScaleThreshold = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 20, context.getResources().getDisplayMetrics());
     }
 
-    public SubsamplingScaleImageView2(Context context) {
+    public SubsamplingScaleImageView3(Context context) {
         this(context, null);
     }
 
@@ -545,7 +514,6 @@ public class SubsamplingScaleImageView2 extends View {
         sPendingCenter = null;
         sRequestedCenter = null;
         isZooming = false;
-        isOneFingerDrag = false;
         isPanning = false;
         isQuickScaling = false;
         maxTouchCount = 0;
@@ -606,7 +574,7 @@ public class SubsamplingScaleImageView2 extends View {
 
             @Override
             public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-                if (panEnabled && readySent && vTranslate != null && e1 != null && e2 != null && (Math.abs(e1.getX() - e2.getX()) > 50 || Math.abs(e1.getY() - e2.getY()) > 50) && (Math.abs(velocityX) > 500 || Math.abs(velocityY) > 500) && !isZooming && !isOneFingerDrag) {
+                if (panEnabled && readySent && vTranslate != null && e1 != null && e2 != null && (Math.abs(e1.getX() - e2.getX()) > 50 || Math.abs(e1.getY() - e2.getY()) > 50) && (Math.abs(velocityX) > 500 || Math.abs(velocityY) > 500) && !isZooming) {
                     PointF vTranslateEnd = new PointF(vTranslate.x + (velocityX * 0.25f), vTranslate.y + (velocityY * 0.25f));
                     float sCenterXEnd = ((getWidth() / 2) - vTranslateEnd.x) / scale;
                     float sCenterYEnd = ((getHeight() / 2) - vTranslateEnd.y) / scale;
@@ -666,7 +634,6 @@ public class SubsamplingScaleImageView2 extends View {
             this.pendingScale = scale;
             this.sPendingCenter = sCenter;
         }
-        MAX_TRANSLATE_Y = h / 2;
     }
 
     /**
@@ -758,8 +725,6 @@ public class SubsamplingScaleImageView2 extends View {
             case MotionEvent.ACTION_POINTER_1_DOWN:
             case MotionEvent.ACTION_POINTER_2_DOWN:
                 anim = null;
-                mDownX = event.getRawX();
-                mDownY = event.getRawY();
                 requestDisallowInterceptTouchEvent(true);
                 maxTouchCount = Math.max(maxTouchCount, touchCount);
                 if (touchCount >= 2) {
@@ -788,7 +753,7 @@ public class SubsamplingScaleImageView2 extends View {
             case MotionEvent.ACTION_MOVE:
                 boolean consumed = false;
                 if (maxTouchCount > 0) {
-                    if (touchCount >= 2 && !isOneFingerDrag) {
+                    if (touchCount >= 2) {
                         // Calculate new distance between touch points, to scale and pan relative to start values.
                         float vDistEnd = distance(event.getX(0), event.getX(1), event.getY(0), event.getY(1));
                         float vCenterEndX = (event.getX(0) + event.getX(1)) / 2;
@@ -835,7 +800,7 @@ public class SubsamplingScaleImageView2 extends View {
                             fitToBounds(true);
                             refreshRequiredTiles(false);
                         }
-                    } else if (isQuickScaling && !isOneFingerDrag) {
+                    } else if (isQuickScaling) {
                         // One finger zoom
                         // Stole Google's Magical Formula™ to make sure it feels the exact same
                         float dist = Math.abs(quickScaleVStart.y - event.getY()) * 2 + quickScaleThreshold;
@@ -910,12 +875,9 @@ public class SubsamplingScaleImageView2 extends View {
                             boolean edgeXSwipe = atXEdge && dx > dy && !isPanning;
                             boolean edgeYSwipe = atYEdge && dy > dx && !isPanning;
                             boolean yPan = lastY == vTranslate.y && dy > offset * 3;
-                            if (scale <= minScale() && maxTouchCount == 1 && (edgeYSwipe || isOneFingerDrag) && Math.abs(event.getRawY() - mDownY) > 2 * mTouchslop) {
-                                onOneFingerPanActionMove(event);
-                            }
                             if (!edgeXSwipe && !edgeYSwipe && (!atXEdge || !atYEdge || yPan || isPanning)) {
                                 isPanning = true;
-                            } else if ((dx > offset || dy > offset) && !isOneFingerDrag) {
+                            } else if ((dx > offset || dy > offset)) {
                                 // Haven't panned the image, and we're at the left or right edge. Switch to page swipe.
                                 maxTouchCount = 0;
                                 handler.removeMessages(MESSAGE_LONG_CLICK);
@@ -974,112 +936,10 @@ public class SubsamplingScaleImageView2 extends View {
                 if (touchCount == 1) {
                     isZooming = false;
                     isPanning = false;
-                    reset();
-                }
-                if (scale <= minScale() && maxTouchCount == 1) {
-                    onActionUp(event);
                 }
                 return true;
         }
         return true;
-    }
-
-    private void onOneFingerPanActionMove(MotionEvent event) {
-        float moveX = event.getRawX();
-        float moveY = event.getRawY();
-        mTranslationX = moveX - mDownX + mLastTranslationX;
-        mTranslationY = moveY - mDownY + mLastTranslationY;
-        isOneFingerDrag = mTranslationY != 0;
-        float percent = Math.abs(mTranslationY / (MAX_TRANSLATE_Y + sHeight));
-        LinearLayout linearLayout = (LinearLayout) getParent();
-        float mAlpha = (1 - percent);
-        if (mAlpha > 1) {
-            mAlpha = 1;
-        } else if (mAlpha < 0) {
-            mAlpha = 0;
-        }
-        if (null != linearLayout) {
-            linearLayout.getBackground().mutate().setAlpha((int) (mAlpha * 255));
-        }
-        //触发回调 根据距离处理其他控件的透明度 显示或者隐藏角标，文字信息等
-        if (null != mOnAlphaChangedListener) {
-            mOnAlphaChangedListener.onTranslationYChanged(mTranslationY);
-        }
-        ViewHelper.setTranslationY(this, mTranslationY);
-//        mScroller.startScroll(0,(int)mDownY,0,(int)mTranslationX);
-
-    }
-
-    public interface onAlphaChangedListener {
-        void onAlphaChanged(float alpha);
-
-        void onTranslationYChanged(float translationY);
-    }
-
-    public void setOnAlphaChangeListener(onAlphaChangedListener alphaChangeListener) {
-        mOnAlphaChangedListener = alphaChangeListener;
-    }
-
-    private void onActionUp(MotionEvent event) {
-        if (Math.abs(mTranslationY) > MAX_EXIT_Y) {
-            exitWithTranslation(mTranslationY);
-        } else {
-            resetCallBackAnimation();
-        }
-    }
-
-    private void resetCallBackAnimation() {
-        ValueAnimator animatorY = ValueAnimator.ofFloat(mTranslationY, 0);
-        animatorY.setDuration(DURATION);
-        animatorY.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-            @Override
-            public void onAnimationUpdate(ValueAnimator valueAnimator) {
-                if (isAnimate) {
-                    mTranslationY = (float) valueAnimator.getAnimatedValue();
-                    mLastTranslationY = mTranslationY;
-                    ViewHelper.setTranslationY(SubsamplingScaleImageView2.this, mTranslationY);
-                }
-            }
-        });
-        animatorY.addListener(new Animator.AnimatorListener() {
-            @Override
-            public void onAnimationStart(Animator animation) {
-                isAnimate = true;
-            }
-
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                if (isAnimate) {
-                    mTranslationY = 0;
-                    LinearLayout linearLayout = (LinearLayout) getParent();
-                    if (null != linearLayout) {
-                        linearLayout.getBackground().mutate().setAlpha(255);
-                    }
-                    invalidate();
-                    reset();
-                }
-                isAnimate = false;
-            }
-
-            @Override
-            public void onAnimationCancel(Animator animation) {
-
-            }
-
-            @Override
-            public void onAnimationRepeat(Animator animation) {
-
-            }
-        });
-        animatorY.start();
-    }
-
-    private void reset() {
-        isOneFingerDrag = false;
-        if (null != mOnAlphaChangedListener) {
-            mOnAlphaChangedListener.onTranslationYChanged(mTranslationY);
-            mOnAlphaChangedListener.onAlphaChanged(1);
-        }
     }
 
     private void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
@@ -1105,7 +965,7 @@ public class SubsamplingScaleImageView2 extends View {
                 sCenter.y = sHeight() / 2;
             }
         }
-        float doubleTapZoomScale = Math.min(maxScale, SubsamplingScaleImageView2.this.doubleTapZoomScale);
+        float doubleTapZoomScale = Math.min(maxScale, SubsamplingScaleImageView3.this.doubleTapZoomScale);
         boolean zoomIn = scale <= doubleTapZoomScale * 0.9;
         float targetScale = zoomIn ? doubleTapZoomScale : minScale();
         Log.e(TAG, "zoom= " + targetScale);
@@ -1697,14 +1557,14 @@ public class SubsamplingScaleImageView2 extends View {
      * Async task used to get image details without blocking the UI thread.
      */
     private static class TilesInitTask extends AsyncTask<Void, Void, int[]> {
-        private final WeakReference<SubsamplingScaleImageView2> viewRef;
+        private final WeakReference<SubsamplingScaleImageView3> viewRef;
         private final WeakReference<Context> contextRef;
         private final WeakReference<DecoderFactory<? extends ImageRegionDecoder>> decoderFactoryRef;
         private final Uri source;
         private ImageRegionDecoder decoder;
         private Exception exception;
 
-        TilesInitTask(SubsamplingScaleImageView2 view, Context context, DecoderFactory<? extends ImageRegionDecoder> decoderFactory, Uri source) {
+        TilesInitTask(SubsamplingScaleImageView3 view, Context context, DecoderFactory<? extends ImageRegionDecoder> decoderFactory, Uri source) {
             this.viewRef = new WeakReference<>(view);
             this.contextRef = new WeakReference<>(context);
             this.decoderFactoryRef = new WeakReference<DecoderFactory<? extends ImageRegionDecoder>>(decoderFactory);
@@ -1717,7 +1577,7 @@ public class SubsamplingScaleImageView2 extends View {
                 String sourceUri = source.toString();
                 Context context = contextRef.get();
                 DecoderFactory<? extends ImageRegionDecoder> decoderFactory = decoderFactoryRef.get();
-                SubsamplingScaleImageView2 view = viewRef.get();
+                SubsamplingScaleImageView3 view = viewRef.get();
                 if (context != null && decoderFactory != null && view != null) {
                     view.debug("TilesInitTask.doInBackground");
                     decoder = decoderFactory.make();
@@ -1740,7 +1600,7 @@ public class SubsamplingScaleImageView2 extends View {
 
         @Override
         protected void onPostExecute(int[] xyo) {
-            final SubsamplingScaleImageView2 view = viewRef.get();
+            final SubsamplingScaleImageView3 view = viewRef.get();
             if (view != null) {
                 if (decoder != null && xyo != null && xyo.length == 3) {
                     view.onTilesInited(decoder, xyo[0], xyo[1], xyo[2]);
@@ -1787,12 +1647,12 @@ public class SubsamplingScaleImageView2 extends View {
      * Async task used to load images without blocking the UI thread.
      */
     private static class TileLoadTask extends AsyncTask<Void, Void, Bitmap> {
-        private final WeakReference<SubsamplingScaleImageView2> viewRef;
+        private final WeakReference<SubsamplingScaleImageView3> viewRef;
         private final WeakReference<ImageRegionDecoder> decoderRef;
         private final WeakReference<Tile> tileRef;
         private Exception exception;
 
-        TileLoadTask(SubsamplingScaleImageView2 view, ImageRegionDecoder decoder, Tile tile) {
+        TileLoadTask(SubsamplingScaleImageView3 view, ImageRegionDecoder decoder, Tile tile) {
             this.viewRef = new WeakReference<>(view);
             this.decoderRef = new WeakReference<>(decoder);
             this.tileRef = new WeakReference<>(tile);
@@ -1802,7 +1662,7 @@ public class SubsamplingScaleImageView2 extends View {
         @Override
         protected Bitmap doInBackground(Void... params) {
             try {
-                SubsamplingScaleImageView2 view = viewRef.get();
+                SubsamplingScaleImageView3 view = viewRef.get();
                 ImageRegionDecoder decoder = decoderRef.get();
                 Tile tile = tileRef.get();
                 if (decoder != null && tile != null && view != null && decoder.isReady() && tile.visible) {
@@ -1830,7 +1690,7 @@ public class SubsamplingScaleImageView2 extends View {
 
         @Override
         protected void onPostExecute(Bitmap bitmap) {
-            final SubsamplingScaleImageView2 subsamplingScaleImageView2 = viewRef.get();
+            final SubsamplingScaleImageView3 subsamplingScaleImageView2 = viewRef.get();
             final Tile tile = tileRef.get();
             if (subsamplingScaleImageView2 != null && tile != null) {
                 if (bitmap != null) {
@@ -1869,7 +1729,7 @@ public class SubsamplingScaleImageView2 extends View {
      * Async task used to load bitmap without blocking the UI thread.
      */
     private static class BitmapLoadTask extends AsyncTask<Void, Void, Integer> {
-        private final WeakReference<SubsamplingScaleImageView2> viewRef;
+        private final WeakReference<SubsamplingScaleImageView3> viewRef;
         private final WeakReference<Context> contextRef;
         private final WeakReference<DecoderFactory<? extends ImageDecoder>> decoderFactoryRef;
         private final Uri source;
@@ -1877,7 +1737,7 @@ public class SubsamplingScaleImageView2 extends View {
         private Bitmap bitmap;
         private Exception exception;
 
-        BitmapLoadTask(SubsamplingScaleImageView2 view, Context context, DecoderFactory<? extends ImageDecoder> decoderFactory, Uri source, boolean preview) {
+        BitmapLoadTask(SubsamplingScaleImageView3 view, Context context, DecoderFactory<? extends ImageDecoder> decoderFactory, Uri source, boolean preview) {
             this.viewRef = new WeakReference<>(view);
             this.contextRef = new WeakReference<>(context);
             this.decoderFactoryRef = new WeakReference<DecoderFactory<? extends ImageDecoder>>(decoderFactory);
@@ -1891,7 +1751,7 @@ public class SubsamplingScaleImageView2 extends View {
                 String sourceUri = source.toString();
                 Context context = contextRef.get();
                 DecoderFactory<? extends ImageDecoder> decoderFactory = decoderFactoryRef.get();
-                SubsamplingScaleImageView2 view = viewRef.get();
+                SubsamplingScaleImageView3 view = viewRef.get();
                 if (context != null && decoderFactory != null && view != null) {
                     view.debug("BitmapLoadTask.doInBackground");
                     bitmap = decoderFactory.make().decode(context, source);
@@ -1909,7 +1769,7 @@ public class SubsamplingScaleImageView2 extends View {
 
         @Override
         protected void onPostExecute(Integer orientation) {
-            SubsamplingScaleImageView2 subsamplingScaleImageView2 = viewRef.get();
+            SubsamplingScaleImageView3 subsamplingScaleImageView2 = viewRef.get();
             if (subsamplingScaleImageView2 != null) {
                 if (bitmap != null && orientation != null) {
                     if (preview) {
@@ -3283,89 +3143,11 @@ public class SubsamplingScaleImageView2 extends View {
 
     }
 
-    public void exitWithTranslation(float currentY) {
-        float translationY;
-        float imgHeight = sHeight;
-        if (currentY > 0) {
-            ValueAnimator animDown = ValueAnimator.ofFloat(mTranslationY, getHeight());
-            animDown.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                @Override
-                public void onAnimationUpdate(ValueAnimator animation) {
-                    float fraction = (float) animation.getAnimatedValue();
-                    ViewHelper.setTranslationY(SubsamplingScaleImageView2.this, fraction);
-                }
-            });
-            animDown.addListener(new Animator.AnimatorListener() {
-                @Override
-                public void onAnimationStart(Animator animation) {
-
-                }
-
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    reset();
-                    Activity activity = ((Activity) getContext());
-                    activity.finish();
-                    activity.overridePendingTransition(fadeIn, fadeOut);
-                }
-
-                @Override
-                public void onAnimationCancel(Animator animation) {
-
-                }
-
-                @Override
-                public void onAnimationRepeat(Animator animation) {
-
-                }
-            });
-            animDown.setDuration(DURATION);
-            animDown.setInterpolator(new LinearInterpolator());
-            animDown.start();
-        } else {
-            ValueAnimator animUp = ValueAnimator.ofFloat(mTranslationY, -getHeight());
-            animUp.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                @Override
-                public void onAnimationUpdate(ValueAnimator animation) {
-                    float fraction = (float) animation.getAnimatedValue();
-                    ViewHelper.setTranslationY(SubsamplingScaleImageView2.this, fraction);
-                }
-            });
-            animUp.addListener(new Animator.AnimatorListener() {
-                @Override
-                public void onAnimationStart(Animator animation) {
-
-                }
-
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    reset();
-                    ((Activity) getContext()).finish();
-                    ((Activity) getContext()).overridePendingTransition(fadeIn, fadeOut);
-                }
-
-                @Override
-                public void onAnimationCancel(Animator animation) {
-
-                }
-
-                @Override
-                public void onAnimationRepeat(Animator animation) {
-
-                }
-            });
-            animUp.setDuration(DURATION);
-            animUp.setInterpolator(new LinearInterpolator());
-            animUp.start();
-        }
+    public int getMaxTouchCount() {
+        return maxTouchCount;
     }
 
-    private void exitWithAnimationByLocationXY() {
-
-        int[] currentXY = new int[2];
-        getLocationOnScreen(currentXY);
-
-
+    public boolean isAtYEdge() {
+        return atYEdge;
     }
-
 }

@@ -2,26 +2,33 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#ffff11"
+    android:gravity="center_horizontal"
     android:orientation="vertical">
 
 
-    <ImageView
-        android:id="@+id/icon"
+    <TextView
+        android:id="@+id/tv_bytedance"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:src="@mipmap/ss"
-        android:scaleType="fitXY" />
-
+        android:text="高仿头条效果"
+        android:gravity="center"
+        android:layout_weight="1"
+        android:textColor="#ffffff"
+        android:onClick="onByteDance"
+        android:textSize="20sp"
+        android:background="@color/colorPrimary"
+        android:layout_height="match_parent" />
 
     <TextView
-        android:id="@+id/intent"
+        android:id="@+id/tv_wechat_friendcircle"
         android:layout_width="match_parent"
-        android:text="点击跳转"
-        android:textColor="#ffffff"
+        android:text="高仿朋友圈效果"
         android:gravity="center"
-        android:visibility="gone"
+        android:textColor="#ffffff"
+        android:layout_weight="1"
+        android:background="@color/colorAccent"
+        android:onClick="onFriendCircle"
         android:textSize="20sp"
         android:layout_height="match_parent" />
+
 
 </LinearLayout>
